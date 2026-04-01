@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Drawing.Imaging;
+using Microsoft.VisualBasic.FileIO;
 
 [assembly: System.Runtime.Versioning.SupportedOSPlatform("windows")]
 
@@ -13,7 +14,6 @@ class Program
         if (args.Length == 0)
             return;
 
-        // --- 追加: quality と delete の解析 ---
         ParseOptions(args);
 
         foreach (string targetPath in args)
@@ -25,6 +25,9 @@ class Program
                 ConvertFolder(targetPath);
             else if (File.Exists(targetPath) && Path.GetExtension(targetPath).ToLower() == ".png")
                 ConvertFile(targetPath);
+
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey(true);
         }
     }
 
@@ -63,10 +66,10 @@ class Program
             Path.GetFileNameWithoutExtension(filePath) + ".jpg"
         );
 
+        bool saved = false;
+
         try
         {
-            Console.WriteLine($"[INFO] Converting: {filePath}");
-
             using (Image image = Image.FromFile(filePath))
             {
                 ImageCodecInfo jpegEncoder = GetEncoder(ImageFormat.Jpeg);
@@ -76,12 +79,35 @@ class Program
                 image.Save(outputPath, jpegEncoder, encoderParams);
             }
 
-            Console.WriteLine($"[OK] Saved: {outputPath}");
-
-            if (DeleteOriginal && File.Exists(outputPath))
+            try
             {
-                File.Delete(filePath);
-                Console.WriteLine($"[DEL] Deleted original: {filePath}");
+                using (var test = Image.FromFile(outputPath))
+                {
+                    saved = true;
+                }
+            }
+            catch
+            {
+                saved = false;
+            }
+
+            if (saved)
+            {
+                Console.WriteLine($"[OK] Saved: {outputPath}");
+
+                if (DeleteOriginal)
+                {
+                    FileSystem.DeleteFile(
+                        filePath,
+                        UIOption.OnlyErrorDialogs,
+                        RecycleOption.SendToRecycleBin
+                    );
+                    Console.WriteLine($"[DEL] Sent to Recycle Bin: {filePath}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[ERR] Save failed (file not readable): {outputPath}");
             }
         }
         catch (Exception ex)
