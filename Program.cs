@@ -4,12 +4,13 @@ using Microsoft.VisualBasic.FileIO;
 
 [assembly: System.Runtime.Versioning.SupportedOSPlatform("windows")]
 
-class Program
+public static class Program
 {
-    static bool DeleteOriginal = false;
-    static long Quality = 90L;
+    private static bool _deleteOriginal = false;
+    private static long _quality = 90L;
+    private static bool _recursive = false;
 
-    static void Main(string[] args)
+    private static void Main(string[] args)
     {
         if (args.Length == 0)
             return;
@@ -31,35 +32,44 @@ class Program
         }
     }
 
-    static void ParseOptions(string[] args)
+    private static void ParseOptions(string[] args)
     {
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "--delete")
             {
-                DeleteOriginal = true;
+                _deleteOriginal = true;
                 Console.WriteLine("[INFO] Delete mode enabled");
+            }
+            else if (args[i] == "--recursive" || args[i] == "-r")
+            {
+                _recursive = true;
+                Console.WriteLine("[INFO] Recursive mode enabled (include subfolders)");
             }
             else if (args[i] == "--quality" && i + 1 < args.Length)
             {
                 if (long.TryParse(args[i + 1], out long q))
                 {
-                    Quality = Math.Clamp(q, 0, 100);
-                    Console.WriteLine($"[INFO] Quality set to {Quality}");
+                    _quality = Math.Clamp(q, 0, 100);
+                    Console.WriteLine($"[INFO] Quality set to {_quality}");
                 }
             }
         }
     }
 
-    static void ConvertFolder(string folderPath)
+    private static void ConvertFolder(string folderPath)
     {
-        string[] pngFiles = Directory.GetFiles(folderPath, "*.png");
+        var opt = _recursive
+            ? System.IO.SearchOption.AllDirectories
+            : System.IO.SearchOption.TopDirectoryOnly;
+
+        string[] pngFiles = Directory.GetFiles(folderPath, "*.png", opt);
 
         foreach (string file in pngFiles)
             ConvertFile(file);
     }
 
-    static void ConvertFile(string filePath)
+    private static void ConvertFile(string filePath)
     {
         string outputPath = Path.Combine(
             Path.GetDirectoryName(filePath),
@@ -67,14 +77,13 @@ class Program
         );
 
         bool saved = false;
-
         try
         {
             using (Image image = Image.FromFile(filePath))
             {
                 ImageCodecInfo jpegEncoder = GetEncoder(ImageFormat.Jpeg);
                 EncoderParameters encoderParams = new EncoderParameters(1);
-                encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, Quality);
+                encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, _quality);
 
                 image.Save(outputPath, jpegEncoder, encoderParams);
             }
@@ -95,7 +104,7 @@ class Program
             {
                 Console.WriteLine($"[OK] Saved: {outputPath}");
 
-                if (DeleteOriginal)
+                if (_deleteOriginal)
                 {
                     FileSystem.DeleteFile(
                         filePath,
@@ -116,11 +125,14 @@ class Program
         }
     }
 
-    static ImageCodecInfo GetEncoder(ImageFormat format)
+    private static ImageCodecInfo GetEncoder(ImageFormat format)
     {
         foreach (ImageCodecInfo codec in ImageCodecInfo.GetImageEncoders())
+        {
             if (codec.FormatID == format.Guid)
                 return codec;
+        }
+
         return null;
     }
 }
