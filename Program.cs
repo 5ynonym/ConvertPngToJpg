@@ -23,11 +23,25 @@ public static class Program
                 continue;
 
             if (Directory.Exists(targetPath))
+            {
+                Console.WriteLine($"\nConvert folder: {targetPath}");
+                Console.WriteLine($"Recursive: {_recursive}, Delete original: {_deleteOriginal}, Quality: {_quality}");
+                Console.Write("Press any key to continue...");
+                Console.ReadKey(true);
+                Console.WriteLine();
                 ConvertFolder(targetPath);
+            }
             else if (File.Exists(targetPath) && Path.GetExtension(targetPath).ToLower() == ".png")
+            {
+                Console.WriteLine($"\nConvert file: {targetPath}");
+                Console.WriteLine($"Delete original: {_deleteOriginal}, Quality: {_quality}");
+                Console.Write("Press any key to continue...");
+                Console.ReadKey(true);
+                Console.WriteLine();
                 ConvertFile(targetPath);
+            }
 
-            Console.WriteLine("Press any key to exit...");
+            Console.WriteLine("\nPress any key to exit...");
             Console.ReadKey(true);
         }
     }
@@ -36,7 +50,7 @@ public static class Program
     {
         for (int i = 0; i < args.Length; i++)
         {
-            if (args[i] == "--delete")
+            if (args[i] == "--delete" || args[i] == "-d")
             {
                 _deleteOriginal = true;
                 Console.WriteLine("[INFO] Delete mode enabled");
@@ -46,7 +60,7 @@ public static class Program
                 _recursive = true;
                 Console.WriteLine("[INFO] Recursive mode enabled (include subfolders)");
             }
-            else if (args[i] == "--quality" && i + 1 < args.Length)
+            else if ((args[i] == "--quality" || args[i] == "-q") && i + 1 < args.Length)
             {
                 if (long.TryParse(args[i + 1], out long q))
                 {
@@ -116,12 +130,30 @@ public static class Program
             }
             else
             {
+                DeleteFailedOutput(outputPath);
                 Console.WriteLine($"[ERR] Save failed (file not readable): {outputPath}");
             }
         }
         catch (Exception ex)
         {
+            DeleteFailedOutput(outputPath);
             Console.WriteLine($"[ERR] Failed: {filePath} ({ex.Message})");
+        }
+    }
+
+    private static void DeleteFailedOutput(string outputPath)
+    {
+        if (!File.Exists(outputPath))
+            return;
+
+        try
+        {
+            File.Delete(outputPath);
+            Console.WriteLine($"[DEL] Removed failed output: {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERR] Could not remove failed output: {outputPath} ({ex.Message})");
         }
     }
 
