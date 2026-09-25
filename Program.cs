@@ -9,6 +9,7 @@ public static class Program
     private static bool _deleteOriginal = false;
     private static long _quality = 90L;
     private static bool _recursive = false;
+    private static bool _noPause = false;
 
     private static void Main(string[] args)
     {
@@ -26,23 +27,32 @@ public static class Program
             {
                 Console.WriteLine($"\nConvert folder: {targetPath}");
                 Console.WriteLine($"Recursive: {_recursive}, Delete original: {_deleteOriginal}, Quality: {_quality}");
-                Console.Write("Press any key to continue...");
-                Console.ReadKey(true);
-                Console.WriteLine();
+                if (!_noPause)
+                {
+                    Console.Write("Press any key to continue...");
+                    Console.ReadKey(true);
+                    Console.WriteLine();
+                }
                 ConvertFolder(targetPath);
             }
             else if (File.Exists(targetPath) && Path.GetExtension(targetPath).ToLower() == ".png")
             {
                 Console.WriteLine($"\nConvert file: {targetPath}");
                 Console.WriteLine($"Delete original: {_deleteOriginal}, Quality: {_quality}");
-                Console.Write("Press any key to continue...");
-                Console.ReadKey(true);
-                Console.WriteLine();
+                if (!_noPause)
+                {
+                    Console.Write("Press any key to continue...");
+                    Console.ReadKey(true);
+                    Console.WriteLine();
+                }
                 ConvertFile(targetPath);
             }
 
-            Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey(true);
+            if (!_noPause)
+            {
+                Console.WriteLine("\nPress any key to exit...");
+                Console.ReadKey(true);
+            }
         }
     }
 
@@ -59,6 +69,11 @@ public static class Program
             {
                 _recursive = true;
                 Console.WriteLine("[INFO] Recursive mode enabled (include subfolders)");
+            }
+            else if (args[i] == "--no-pause")
+            {
+                _noPause = true;
+                Console.WriteLine("[INFO] Pause prompts disabled");
             }
             else if ((args[i] == "--quality" || args[i] == "-q") && i + 1 < args.Length)
             {
