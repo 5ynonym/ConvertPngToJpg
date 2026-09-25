@@ -53,6 +53,10 @@ public static class Program
                 Console.WriteLine("\nPress any key to exit...");
                 Console.ReadKey(true);
             }
+            else
+            {
+                Console.WriteLine();
+            }
         }
     }
 
